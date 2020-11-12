@@ -6,16 +6,18 @@
     expected_slaves: "{{ _verify_expected_slaves }}"
   tasks:
     - name: verify | check if master is correctly set
-      command: redis-cli -a {{redis_password}} INFO REPLICATION
+      command: redis-cli -a {{ redis_password }} INFO REPLICATION
       register: rout
+      changed_when: false
       failed_when:
         rout.rc != 0 or
         not rout.stdout or
         rout.stdout.find('role:' + redis_role) == -1
 
     - name: verify | check number of connected nodes
-      command: redis-cli -a {{redis_password}} INFO REPLICATION
+      command: redis-cli -a {{ redis_password }} INFO REPLICATION
       register: rout
+      changed_when: false
       failed_when:
         rout.rc != 0 or
         rout.stdout.find('connected_slaves:' + expected_slaves|string) == -1
@@ -25,5 +27,6 @@
       stat:
         path: /etc/cron.d/redis_backups_cron
       register: cron_stat
+      changed_when: false
       failed_when: not cron_stat.stat.exists
       when: redis_role == 'master'

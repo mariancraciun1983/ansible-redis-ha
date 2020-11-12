@@ -1,14 +1,17 @@
 ---
 scenario:
   name: default
-  idempotent: false
   test_sequence:
-    - destroy
     - lint
+    - destroy
+    - dependency
+    - syntax
     - create
+    - prepare
     - converge
-    # - idempotence
+    # - idempotence  # sentinel keeps updating config
     - verify
+    - destroy
 
 dependency:
   name: galaxy

@@ -1,10 +1,12 @@
 ---
 - name: pcs | add redis user to haclient group
-  user: 
+  user:
     name: redis
     group: redis
     shell: /usr/sbin/nologin
-    groups: redis, haclient
+    groups:
+      - redis
+      - haclient
     append: no
 
 - name: pcs | pacemaker redis acls
@@ -16,4 +18,4 @@
     - pcs acl enable
     - pcs acl role create RedisRole description="Full access to cluster" write xpath /cib
     - pcs acl user create redis RedisRole
-  when: inventory_hostname == play_hosts[0] 
+  when: inventory_hostname == play_hosts[0]

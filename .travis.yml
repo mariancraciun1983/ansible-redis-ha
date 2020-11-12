@@ -26,7 +26,7 @@ install:
 script:
   - pipenv run python -V
   - pipenv run molecule --version
-  # - pipenv run molecule test -s default
+  - pipenv run molecule test -s default
 
 notifications:
   webhooks: https://galaxy.ansible.com/api/v1/notifications/

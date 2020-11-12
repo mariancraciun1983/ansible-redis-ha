@@ -8,19 +8,21 @@
     expected_slave_ips: "{{ _verify_slave_ips }}"
   tasks:
     - name: verify | check if master is correctly set
-      command: redis-cli -a {{redis_password}} INFO REPLICATION
+      command: redis-cli -a {{ redis_password }} INFO REPLICATION
       register: rout
       failed_when:
         rout.rc != 0 or
         not rout.stdout or
         rout.stdout.find('role:' + redis_role) == -1
+      changed_when: false
 
     - name: verify | check number of connected nodes
-      command: redis-cli -a {{redis_password}} INFO REPLICATION
+      command: redis-cli -a {{ redis_password }} INFO REPLICATION
       register: rout
       failed_when:
         rout.rc != 0 or
         rout.stdout.find('connected_slaves:' + expected_slaves|string) == -1
+      changed_when: false
       when: redis_role == 'master'
 
     - name: verify | RO/6380 Allowed | cross-check - debug
@@ -39,7 +41,7 @@
         -a {{ redis_password }}
         INFO REPLICATION
       with_items: "{{ play_hosts }}"
-      register: rout
+      changed_when: false
 
     - name: verify | RW/6381 Master OK | debug
       debug:
@@ -55,7 +57,7 @@
         -p 6381
         -a {{ redis_password }}
         INFO REPLICATION
-      register: rout
+      changed_when: false
 
     - name: verify | RW/6381 Slaves are Blocked | cross-check - debug
       debug:
@@ -75,3 +77,4 @@
       with_items: "{{ expected_slave_ips }}"
       register: rout
       failed_when: rout.rc == 0
+      changed_when: false

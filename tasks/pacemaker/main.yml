@@ -22,7 +22,7 @@
 - name: pacemaker | resources reset
   import_tasks: resources-reset.yml
   become_user: redis
-  become: yes
+  become: true
   tags:
     - redis-pacemaker-resources-reset
   when: inventory_hostname == play_hosts[0] and redis_pacemaker_reset|bool
@@ -30,7 +30,7 @@
 - name: pacemaker | resources
   import_tasks: resources.yml
   become_user: redis
-  become: yes
+  become: true
   tags:
     - redis-pacemaker-resources
   when: inventory_hostname == play_hosts[0]
@@ -38,7 +38,7 @@
 - name: pacemaker | resources reset
   import_tasks: helpers-init.yml
   become_user: redis
-  become: yes
+  become: true
   tags:
     - redis-pacemaker-helpers-init
   when: redis_pacemaker_helpers_init|bool

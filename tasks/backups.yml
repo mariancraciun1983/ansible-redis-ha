@@ -9,6 +9,7 @@
       file:
         path: "{{ redis_backups_cron.destination }}"
         state: directory
+        mode: 0755
   when: redis_backups|bool and redis_role == 'master'
 
 - name: backups | update cronjob
@@ -18,6 +19,6 @@
     hour: "{{ redis_backups_cron.hour | default(4)  }}"
     minute: "{{ redis_backups_cron.minute | default(0) }}"
     user: root
-    job: "REDISCLI_AUTH={{redis_password}} /usr/local/bin/redis-backup {{redis_backups_cron.destination}}"
+    job: "REDISCLI_AUTH={{ redis_password }} /usr/local/bin/redis-backup {{ redis_backups_cron.destination }}"
     state: "{% if redis_role == 'master' %}present{% else %}absent{% endif %}"
     cron_file: redis_backups_cron

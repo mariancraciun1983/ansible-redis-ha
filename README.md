@@ -6,10 +6,10 @@
     <img src="https://travis-ci.com/mariancraciun1983/ansible-redis-ha.svg?branch=master" alt="Build Status" />
   </a>
   <a href="https://galaxy.ansible.com/mariancraciun1983/redis_ha">
-    <img src="https://img.shields.io/ansible/role/51705" alt="Ansible Galaxy" />
+    <img src="https://img.shields.io/ansible/role/51765" alt="Ansible Galaxy" />
   </a>
   <a href="https://galaxy.ansible.com/mariancraciun1983/redis_ha">
-    <img src="https://img.shields.io/ansible/quality/51705" alt="Ansible Quality Score" />
+    <img src="https://img.shields.io/ansible/quality/51765" alt="Ansible Quality Score" />
   </a>
   <a href="https://opensource.org/licenses/MIT">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License" />
@@ -59,26 +59,39 @@ The approach found in this role takes advantage of the Corosync/Pacemaker to man
 - corosync will block port 6381 and 6380 when redis_role=fail
 - the load balancer will try 6381 port for RW and only one server will NOT reject the connections `redis_role=primary`
 
-```yml
-group_vars:
-  all:
-    # corosync config
-    install_python3: true
-    corosync_hacluster_password: 1q2w3e4r5t
-    corosync_cluster_settings:
-      - key: stonith-enabled
-        value: "false"
-      - key: no-quorum-policy
-        value: ignore
-      - key: start-failure-is-fatal
-        value: "false"
-      - key: symmetric-cluster
-        value: "false"
+### Requirements
+The nodes should have Corosync with Pacemaker already configured. Check my [corosync_pacemaker ansible role](https://github.com/mariancraciun1983/ansible-corosync-pacemaker) . Having `symmetric-cluster` is also required so that not all nodes will get the resources assigned to them, but only based on pacemaker colocation rules.
 
-    redis_pacemaker: true
-    # this must be true only once, initially, when the Corosync node attributes need to be configured
-    # after that, redis sentinel will be triggering node attributes updates in case of a failover
-    redis_pacemaker_helpers_init: true
+`playbook.yml`:
+
+```yaml
+- name: Prepare Corosync/Pacemaker
+  hosts: all
+  gather_facts: true
+  roles:
+    - mariancraciun1983.corosync_pacemaker
+    - mariancraciun1983.redis_ha
+```
+
+group_vars/all.yml
+```yaml
+# corosync config
+install_python3: true
+corosync_hacluster_password: 1q2w3e4r5t
+corosync_cluster_settings:
+  - key: stonith-enabled
+    value: "false"
+  - key: no-quorum-policy
+    value: ignore
+  - key: start-failure-is-fatal
+    value: "false"
+  - key: symmetric-cluster
+    value: "false"
+
+redis_pacemaker: true
+# this must be true only once, initially, when the Corosync node attributes need to be configured
+# after that, redis sentinel will be triggering node attributes updates in case of a failover
+redis_pacemaker_helpers_init: true
 ```
 
 Running `crm_mon -AnfroRtc` will gives us the following:
@@ -151,9 +164,12 @@ This will enable automated on the master server with redis-cli `--rdb` command.
 For more advanced/larger backups `rdiff-backup` could be a better candidate.
 
 
+
 ## Testing
 
-Molecule with docker is being used.
+Molecule with docker is being used with 2 scenarios:
+ - default - non-pacemaker
+ - corosync/pacemaker based
 
 Running the tests:
 ```bash
@@ -164,3 +180,5 @@ pipenv run molecule test
 ## License
 
 MIT License
+
+The code contains the [iptables_raw](https://github.com/Nordeus/ansible_iptables_raw) ansible module which is also licensed under MIT License.
