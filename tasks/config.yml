@@ -1,0 +1,30 @@
+---
+- name: config | deploy redis config
+  template:
+    src: redis.conf.j2
+    dest: /etc/redis/redis.conf
+    owner: redis
+    group: root
+    mode: 0640
+  notify:
+    - restart redis
+    - restart sentinel
+
+- name: config | deploy redis sentinel config
+  template:
+    src: sentinel.conf.j2
+    dest: /etc/redis/sentinel.conf
+    owner: redis
+    group: root
+    mode: 0640
+  notify: restart sentinel
+
+- name: config | ensure redis is started
+  service:
+    name: redis-server
+    state: started
+
+- name: config | ensure sentinel is started
+  service:
+    name: redis-sentinel
+    state: started

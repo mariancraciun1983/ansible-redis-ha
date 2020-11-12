@@ -1,0 +1,146 @@
+---
+scenario:
+  name: pacemaker
+  idempotent: false
+  test_sequence:
+    - destroy
+    - lint
+    - create
+    - converge
+    # - idempotence
+    - verify
+
+dependency:
+  name: galaxy
+
+driver:
+  name: docker
+
+lint: |
+  set -e
+  yamllint .
+  ansible-lint
+
+platforms:
+  - name: nodepcm1
+    image: geerlingguy/docker-ubuntu2004-ansible:latest
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    capabilities:
+      - SYS_ADMIN
+    command: "/lib/systemd/systemd"
+    privileged: true
+    pre_build_image: true
+    docker_networks:
+      - name: molecule_redis_pcm
+        ipam_config:
+          - subnet: "10.30.51.0/24"
+    etc_hosts: >
+      {
+        "nodepcm1" : "10.30.51.11",
+        "nodepcm2" : "10.30.51.12",
+        "nodepcm3" : "10.30.51.13",
+      }
+    networks:
+      - name: molecule_redis_pcm
+        ipv4_address: "10.30.51.11"
+
+  - name: nodepcm2
+    image: geerlingguy/docker-ubuntu2004-ansible:latest
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    capabilities:
+      - SYS_ADMIN
+    command: "/lib/systemd/systemd"
+    privileged: true
+    pre_build_image: true
+    docker_networks:
+      - name: molecule_redis_pcm
+        ipam_config:
+          - subnet: "10.30.51.0/24"
+    etc_hosts: >
+      {
+        "nodepcm1" : "10.30.51.11",
+        "nodepcm2" : "10.30.51.12",
+        "nodepcm3" : "10.30.51.13",
+      }
+    networks:
+      - name: molecule_redis_pcm
+        ipv4_address: "10.30.51.12"
+
+  - name: nodepcm3
+    image: geerlingguy/docker-ubuntu2004-ansible:latest
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    capabilities:
+      - SYS_ADMIN
+    command: "/lib/systemd/systemd"
+    privileged: true
+    docker_networks:
+      - name: molecule_redis_pcm
+        ipam_config:
+          - subnet: "10.30.51.0/24"
+    etc_hosts: >
+      {
+        "nodepcm1" : "10.30.51.11",
+        "nodepcm2" : "10.30.51.12",
+        "nodepcm3" : "10.30.51.13",
+      }
+    networks:
+      - name: molecule_redis_pcm
+        ipv4_address: "10.30.51.13"
+
+provisioner:
+  name: ansible
+  playbooks:
+    create: create.yml
+    prepare: prepare.yml
+    converge: ../default/converge.yml
+  inventory:
+    group_vars:
+      all:
+        # requirements
+        install_python3: true
+        corosync_hacluster_password: 1q2w3e4r5t
+        corosync_cluster_settings:
+          - key: stonith-enabled
+            value: "false"
+          - key: no-quorum-policy
+            value: ignore
+          - key: start-failure-is-fatal
+            value: "false"
+          - key: symmetric-cluster
+            value: "false"
+
+        redis_password: 1q2w3e4r5t
+
+        redis_pacemaker: true
+        redis_pacemaker_helpers_init: true
+
+        # verify playbook vars
+        _verify_redis_password: "{{ redis_password }}"
+        _verify_redis_role:  "{{ redis_role }}"
+        _verify_master_ip: 10.30.51.11
+        _verify_slave_ips:
+          - 10.30.51.12
+          - 10.30.51.13
+        _verify_expected_slaves: 2
+    host_vars:
+      nodepcm1:
+        redis_role: master
+      nodepcm2:
+        redis_role: slave
+      nodepcm3:
+        redis_role: slave
+
+verifier:
+  name: ansible

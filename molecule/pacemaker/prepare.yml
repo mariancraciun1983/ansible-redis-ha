@@ -1,0 +1,12 @@
+---
+- name: Prepare Python
+  hosts: all
+  gather_facts: false
+  roles:
+    - mariancraciun1983.install_python
+
+- name: Prepare Corosync/Pacemaker
+  hosts: all
+  gather_facts: true
+  roles:
+    - mariancraciun1983.corosync_pacemaker

@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+## redis backup script
+## usage
+## redis-backup backup_dir
+
+
+# Scripts & Files
+
+if [ -z "$1" ]
+  then
+    echo "The backup dir was not specified"
+fi
+
+backup_dir=${1}
+
+if [ ! -d "$backup_dir" ]; then
+  # Take action if $DIR exists. #
+  echo "The $backup_dir does not exists"
+  exit 1
+fi
+
+# Directories
+temp_path='/tmp'
+temp_file_name="redis-dump-$(date +%Y%m%d%H%M).rdb"
+temp_db_file="/tmp/$temp_file_name"
+
+echo "Backing up into $temp_db_file"
+
+rm -f $temp_db_file
+rm -f $temp_db_file.gz
+/usr/bin/redis-cli --rdb $temp_db_file
+echo "Gzip as ${temp_db_file}.gz"
+gzip $temp_db_file
+mv ${temp_db_file}.gz ${backup_dir}/${temp_file_name}.gz
+echo "Moving to ${backup_dir}/${temp_file_name}.gz"
+
+find ${backup_dir} -mindepth 1 -mtime +7 -delete

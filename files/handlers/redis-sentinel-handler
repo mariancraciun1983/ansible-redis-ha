@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+# usage:redis-sentinel-handler <master-name> <role> <state> <from-ip> <from-port> <to-ip> <to-port>
+##
+# if 10.10.10.10 is my ip, than I am the observed
+# if 10.10.10.11 is my ip, than I am the leader
+# ./redis-sentinel-handler redis-cluster observer start 10.10.10.10 6379 10.10.10.11 6379
+##
+# this means I am following 10.10.10.11
+# ./redis-sentinel-handler redis-cluster leader start 10.10.10.10 6379 10.10.10.11 6379
+
+
+if [[ -z "${LOGFILE}" ]]; then
+  LOGFILE=/var/log/redis/sentinel-handler.log
+fi
+
+echo "" | /usr/bin/tee -a $LOGFILE
+date  | /usr/bin/tee -a $LOGFILE
+echo "$@" | /usr/bin/tee -a $LOGFILE
+
+NODE_NAME=`hostname -s`
+ROLE="$2"
+STATE="$3"
+FROM_IP="$4"
+FROM_IP_IS_MINE=$(hostname --ip-address | /bin/grep "$4" | /usr/bin/wc -l)
+TO_IP="$6"
+TO_IP_IS_MINE=$(hostname --ip-address | /bin/grep "$6" | /usr/bin/wc -l)
+
+if [[ "$STATE" == 'start' ]]; then
+
+  if [[ "$TO_IP_IS_MINE" -eq 1 ]]; then
+    echo "switching to leader " 2>&1 | /usr/bin/tee -a $LOGFILE
+    /usr/local/bin/redis-sentinel-pcs "$NODE_NAME" "leader" 2>&1 | /usr/bin/tee -a $LOGFILE
+  else
+    echo "switching to observer" 2>&1 | /usr/bin/tee -a $LOGFILE
+    /usr/local/bin/redis-sentinel-pcs "$NODE_NAME"  "observer" 2>&1 | /usr/bin/tee -a $LOGFILE
+  fi
+
+fi
+
+echo "Done"  | /usr/bin/tee -a $LOGFILE

@@ -1,0 +1,29 @@
+---
+
+# !NOTE - this will not handle localhost/loopback
+
+- name: network | redis iptables multiport - mangle MARK
+  iptables_raw:
+    name: redis_multiport_mangle
+    table: mangle
+    rules: |
+      -A OUTPUT -p tcp -m tcp -o lo --dport 6380 -j MARK --set-mark 6380
+      -A OUTPUT -p tcp -m tcp -o lo --dport 6381 -j MARK --set-mark 6381
+      -A PREROUTING -p tcp -m tcp --dport 6380 -j MARK --set-mark 6380
+      -A PREROUTING -p tcp -m tcp --dport 6381 -j MARK --set-mark 6381
+
+- name: network | redis iptables multiport - nat REDIRECT
+  iptables_raw:
+    name: redis_multiport_nat
+    table: nat
+    rules: |
+      -A OUTPUT -p tcp -m tcp -o lo --dport 6380 -j REDIRECT --to-ports 6379
+      -A OUTPUT -p tcp -m tcp -o lo --dport 6381 -j REDIRECT --to-ports 6379
+      -A PREROUTING -p tcp --dport 6380 -j REDIRECT --to-ports 6379
+      -A PREROUTING -p tcp --dport 6381 -j REDIRECT --to-ports 6379
+
+- name: network | allow ip forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    state: present

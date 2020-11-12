@@ -1,0 +1,49 @@
+---
+- name: packages | add dependencies
+  apt:
+    name:
+      - gnupg2
+      - apt-transport-https
+      - ca-certificates
+      - software-properties-common
+    update_cache: true
+    state: present
+
+- name: packages | add ppa repo
+  apt_repository:
+    repo: ppa:chris-lea/redis-server
+    filename: redis
+    state: present
+
+- name: packages | install packages
+  apt:
+    name:
+      - redis-server
+      - redis-sentinel
+      - rdiff-backup
+      - iptables
+      - iptables-persistent
+    state: present
+    update_cache: yes
+
+- name: packages | enable services
+  service:
+    name: "{{ item }}"
+    enabled: true
+  with_items:
+    - redis-server
+    - redis-sentinel
+
+- name: packages | unmask services
+  systemd:
+    name: "{{ item }}"
+    masked: no
+  with_items:
+    - redis-server
+    - redis-sentinel
+
+- name: packages | pip dependencies
+  pip:
+    executable: pip3
+    name:
+      - requests==2.20.1

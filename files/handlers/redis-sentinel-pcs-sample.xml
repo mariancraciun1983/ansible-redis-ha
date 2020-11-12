@@ -1,0 +1,5 @@
+<node id="2" uname="node2">
+  <instance_attributes id="nodes-2">
+    <nvpair id="nodes-2-redis_role" name="redis_role" value="primary"/>
+  </instance_attributes>
+</node>

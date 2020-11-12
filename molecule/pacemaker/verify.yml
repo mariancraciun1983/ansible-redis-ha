@@ -1,0 +1,77 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: true
+  vars:
+    expected_slaves: "{{ _verify_expected_slaves }}"
+    expected_master_ip: "{{ _verify_master_ip }}"
+    expected_slave_ips: "{{ _verify_slave_ips }}"
+  tasks:
+    - name: verify | check if master is correctly set
+      command: redis-cli -a {{redis_password}} INFO REPLICATION
+      register: rout
+      failed_when:
+        rout.rc != 0 or
+        not rout.stdout or
+        rout.stdout.find('role:' + redis_role) == -1
+
+    - name: verify | check number of connected nodes
+      command: redis-cli -a {{redis_password}} INFO REPLICATION
+      register: rout
+      failed_when:
+        rout.rc != 0 or
+        rout.stdout.find('connected_slaves:' + expected_slaves|string) == -1
+      when: redis_role == 'master'
+
+    - name: verify | RO/6380 Allowed | cross-check - debug
+      debug:
+        msg: >-
+          Connecting from {{ ansible_hostname }}
+          to {{ hostvars[item]['ansible_default_ipv4']['address'] }}
+          port 6380 (RO)
+      with_items: "{{ play_hosts }}"
+
+    - name: verify | RO/6380 Allowed | cross-check
+      command: >-
+        redis-cli
+        -h {{ hostvars[item]['ansible_default_ipv4']['address'] }}
+        -p 6380
+        -a {{ redis_password }}
+        INFO REPLICATION
+      with_items: "{{ play_hosts }}"
+      register: rout
+
+    - name: verify | RW/6381 Master OK | debug
+      debug:
+        msg: >-
+          Connecting from {{ ansible_hostname }}
+          to {{ expected_master_ip }}
+          port 6381 (RO)
+
+    - name: verify | RO/6381 Master OK
+      command: >-
+        redis-cli
+        -h {{ expected_master_ip }}
+        -p 6381
+        -a {{ redis_password }}
+        INFO REPLICATION
+      register: rout
+
+    - name: verify | RW/6381 Slaves are Blocked | cross-check - debug
+      debug:
+        msg: >-
+          Connecting from {{ ansible_hostname }}
+          to {{ item }}
+          port 6381 (RW)
+      with_items: "{{ expected_slave_ips }}"
+
+    - name: verify | RW/6381 Slaves are Blocked | cross-check
+      command: >-
+        redis-cli
+        -h {{ item }}
+        -p 6381
+        -a {{ redis_password }}
+        INFO REPLICATION
+      with_items: "{{ expected_slave_ips }}"
+      register: rout
+      failed_when: rout.rc == 0

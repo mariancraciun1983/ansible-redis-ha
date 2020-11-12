@@ -1,0 +1,31 @@
+---
+- name: resources | create pcs resources
+  command: "{{ item }}"
+  register: pcs_out
+  changed_when: pcs_out.rc == 0
+  failed_when: >-
+    pcs_out.rc != 0 and 
+    pcs_out.stderr.find('already exists') == -1 and
+    pcs_out.stderr.find('is already a clone') == -1
+  with_items:
+    - pcs cluster cib redis-ha
+    - >-
+      pcs -f redis-ha resource create RedisLBReadBlock ocf:heartbeat:command_raw
+      start_cmd="/usr/sbin/iptables -w --wait-interval 10 -A INPUT -m mark --mark 6380 -j REJECT"
+      stop_cmd="/usr/sbin/iptables -w --wait-interval 10 -D INPUT -m mark --mark 6380 -j REJECT"
+      monitor_cmd="/usr/sbin/iptables -w --wait-interval 10 -C INPUT -m mark --mark 6380 -j REJECT"
+    - >-
+      pcs -f redis-ha resource create RedisLBWriteBlock ocf:heartbeat:command_raw
+      start_cmd="/usr/sbin/iptables -w --wait-interval 10 -A INPUT -m mark --mark 6381 -j REJECT"
+      stop_cmd="/usr/sbin/iptables -w --wait-interval 10 -D INPUT -m mark --mark 6381 -j REJECT"
+      monitor_cmd="/usr/sbin/iptables -w --wait-interval 10 -C INPUT -m mark --mark 6381 -j REJECT"
+    - pcs -f redis-ha resource clone RedisLBReadBlock clone-node-max=1 clone-min=1
+    - pcs -f redis-ha resource clone RedisLBWriteBlock clone-node-max=1 clone-min=1
+    # failed roles get blocked on both reads and writes
+    - pcs -f redis-ha constraint location RedisLBReadBlock-clone rule score=INFINITY redis_role eq fail
+    - pcs -f redis-ha constraint location RedisLBWriteBlock-clone rule score=INFINITY redis_role eq fail
+    # replica gets blocked on writes
+    - pcs -f redis-ha constraint location RedisLBWriteBlock-clone rule score=INFINITY redis_role eq replica
+    - pcs cluster cib-push --wait 60 redis-ha
+  args:
+    chdir: /var/lib/redis

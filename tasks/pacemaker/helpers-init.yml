@@ -1,0 +1,8 @@
+---
+- name: helpers-init | redis-sentinel-pcs leader
+  command: /usr/local/bin/redis-sentinel-pcs {{ ansible_hostname }} leader
+  when: redis_role == "master"
+
+- name: helpers-init | redis-sentinel-pcs observer
+  command: /usr/local/bin/redis-sentinel-pcs {{ ansible_hostname }} observer
+  when: redis_role == "slave"

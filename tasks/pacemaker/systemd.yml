@@ -1,0 +1,9 @@
+---
+- name: systemd | update redis-sentinel service with extra groups
+  copy:
+    src: files/sentinel.service
+    dest: /lib/systemd/system/redis-sentinel.service
+    owner: root
+    group: root
+    mode: 0644
+  notify: reload sentinel daemon

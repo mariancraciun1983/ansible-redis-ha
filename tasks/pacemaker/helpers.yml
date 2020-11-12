@@ -1,0 +1,14 @@
+---
+- name: helpers | deploy sentinel handlers
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0755
+  loop:
+    - src: files/handlers/redis-sentinel-handler
+      dest: /usr/local/bin/redis-sentinel-handler
+    - src: files/handlers/redis-sentinel-pcs
+      dest: /usr/local/bin/redis-sentinel-pcs
+  # notify: restart sentinel

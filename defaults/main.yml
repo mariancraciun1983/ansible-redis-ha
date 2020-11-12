@@ -1,0 +1,31 @@
+---
+redis_role:
+
+_redis_master_envvars: "{{ hostvars | filter_first_hostvars('redis_role','master') }}"
+
+redis_use_internal_ip: false
+redis_master_ip: "{% if redis_use_internal_ip|bool %}{{ _redis_master_envvars['internal_ip'] }}{% else %}{{ _redis_master_envvars['ansible_default_ipv4']['address'] }}{% endif %}"
+redis_listen_ip: "{% if redis_use_internal_ip|bool %}{{ internal_ip | mandatory }}{% else %}{{ ansible_default_ipv4.address }}{% endif %}"
+
+redis_password: 1q2w3e4r5t
+
+redis_sentinel_monitor:
+  name: redis-cluster
+  host: "{{ redis_master_ip }}"
+  port: 6379
+  quorum: 2
+  down_after_milliseconds: 10000
+  failover_timeout: 20000
+  parallel_syncs: 1
+
+redis_backups: no
+redis_backups_cron:
+  day: "*"
+  hour: 4
+  destination: /mnt/storage/backups/redis/
+
+redis_pacemaker: no
+redis_pacemaker_reset: no
+
+# force updating the pacemaker redis_role node attrs
+redis_pacemaker_helpers_init: no

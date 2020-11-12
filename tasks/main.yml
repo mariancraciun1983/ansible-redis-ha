@@ -1,0 +1,22 @@
+---
+- name: packages
+  import_tasks: packages.yml
+  tags:
+    - redis-packages
+
+- name: pacemaker
+  import_tasks: pacemaker/main.yml
+  tags:
+    - redis-pacemaker
+  when: redis_pacemaker|bool
+
+- name: config
+  import_tasks: config.yml
+  tags:
+    - redis-config
+
+- name: backups
+  import_tasks: backups.yml
+  tags:
+    - redis-backups
+  when: redis_backups|bool
