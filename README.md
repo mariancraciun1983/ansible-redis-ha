@@ -71,6 +71,9 @@ The nodes should have Corosync with Pacemaker already configured. Check my [coro
   roles:
     - mariancraciun1983.corosync_pacemaker
     - mariancraciun1983.redis_ha
+  vars:
+      ansible_become: yes
+      ansible_user: root
 ```
 
 group_vars/all.yml

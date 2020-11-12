@@ -1,11 +1,8 @@
 - name: restart redis
-  become_user: root
   service: name=redis state=restarted
 
 - name: restart sentinel
-  become_user: root
   service: name=redis-sentinel state=restarted
 
 - name: reload sentinel daemon
-  become_user: root
   service: name=redis-sentinel daemon_reload=yes state=restarted
